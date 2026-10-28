@@ -1,0 +1,120 @@
+@article{alvim2004hybrid,
+  author = {Alvim, Adriana C. F. and Ribeiro, Celso C. and Glover, Fred and Aloise, Dario J.},
+  journal = {Journal of Heuristics},
+  number = 2,
+  pages = {205--229},
+  title = {A Hybrid Improvement Heuristic for the One-Dimensional Bin Packing Problem},
+  volume = 10,
+  year = 2004,
+  doi = {10.1023/B:HEUR.0000026267.44673.ed}
+}
+
+@article{chan2007quality,
+  author = {Chan, Tung Sun and Au, K. C. and Chan, L. Y. and Lau, T. L.},
+  journal = {Robotics and Computer-Integrated Manufacturing},
+  number = 1,
+  pages = {71--81},
+  title = {Using Genetic Algorithms to Solve Quality-Related Bin Packing Problem},
+  volume = 23,
+  year = 2007,
+  doi = {10.1016/j.rcim.2005.11.001}
+}
+
+@article{dorigo1996antsystem,
+  author = {Dorigo, Marco and Maniezzo, Vittorio and Colorni, Alberto},
+  journal = {IEEE Transactions on Systems, Man, and Cybernetics, Part B: Cybernetics},
+  number = 1,
+  pages = {29--41},
+  title = {Ant System: Optimization by a Colony of Cooperating Agents},
+  volume = 26,
+  year = 1996,
+  doi = {10.1109/3477.484436}
+}
+
+@article{dorigo1999antalgorithms,
+  author = {Dorigo, Marco and Di Caro, Gianni and Gambardella, Luca Maria},
+  journal = {Artificial Life},
+  number = 2,
+  pages = {137--172},
+  title = {Ant Algorithms for Discrete Optimization},
+  volume = 5,
+  year = 1999,
+  doi = {10.1162/106454699568728}
+}
+
+@article{hemmelmayr2012vns,
+  author = {Hemmelmayr, Viktor and Hirsch, Robert F. and Schmid, Verena},
+  journal = {Computers and Operations Research},
+  number = 5,
+  pages = {1097--1108},
+  title = {Variable Neighbourhood Search for the Variable Sized Bin Packing Problem},
+  volume = 39,
+  year = 2012,
+  doi = {10.1016/j.cor.2011.07.003}
+}
+
+@article{levine2004aco,
+  author = {Levine, John and Ducatelle, Francois},
+  journal = {Journal of the Operational Research Society},
+  number = 7,
+  pages = {705--716},
+  title = {Ant Colony Optimisation and Local Search for Bin-Packing and Cutting Stock Problems},
+  volume = 55,
+  year = 2004,
+  doi = {10.1057/palgrave.jors.2601771}
+}
+
+@article{munien2021survey,
+  author = {Munien, Chanale{\"a} and Ezugwu, Absalom E.},
+  journal = {Journal of Intelligent Systems},
+  number = 1,
+  pages = {636--663},
+  title = {Metaheuristic Algorithms for One-Dimensional Bin-Packing Problems: A Survey of Recent Advances and Applications},
+  volume = 30,
+  year = 2021,
+  doi = {10.1515/jisys-2020-0117}
+}
+
+@article{liu2008moepso,
+  author = {Liu, D. S. and Tan, K. C. and Huang, S. Y. and Goh, C. K. and Ho, W. K.},
+  journal = {European Journal of Operational Research},
+  number = 2,
+  pages = {357--382},
+  title = {On Solving Multiobjective Bin Packing Problems Using Evolutionary Particle Swarm Optimization},
+  volume = 190,
+  year = 2008,
+  doi = {10.1016/j.ejor.2007.06.032}
+}
+
+@article{rao1994bin,
+  author = {Rao, R. L. and Iyengar, S. S.},
+  journal = {Computers and Mathematics with Applications},
+  number = 5,
+  pages = {71--82},
+  title = {Bin-Packing by Simulated Annealing},
+  volume = 27,
+  year = 1994,
+  doi = {10.1016/0898-1221(94)90077-9}
+}
+
+@article{stutzle2000maxmin,
+  author = {Stutzle, Thomas and Hoos, Holger H.},
+  journal = {Future Generation Computer Systems},
+  number = 8,
+  pages = {889--914},
+  title = {MAX--MIN Ant System},
+  volume = 16,
+  year = 2000,
+  doi = {10.1016/S0167-739X(00)00043-1}
+}
+
+@article{yakawa2005ga,
+  author = {Yakawa, Tetsuya and Iima, Hitoshi and Sannomiya, Nobuo},
+  journal = {Transactions of the Society of Instrument and Control Engineers},
+  number = 3,
+  pages = {274--282},
+  title = {Proposition of Genetic Algorithm for Bin Packing Problems},
+  volume = 41,
+  year = 2005,
+  doi = {10.9746/sicetr1965.41.274}
+}
