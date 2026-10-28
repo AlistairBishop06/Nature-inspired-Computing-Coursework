@@ -6,7 +6,7 @@ import argparse
 import csv
 import random
 from dataclasses import dataclass
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, Tuple
 
 
 #the four parameter settings required by the spec.
@@ -16,6 +16,28 @@ REQUIRED_SETTINGS: tuple[tuple[int, float], ...] = (
     (10, 0.05),
     (10, 0.30),
 )
+
+ExperimentSetting = Tuple[str, int, float]
+
+REQUIRED_EXPERIMENT_PLAN: tuple[ExperimentSetting, ...] = tuple(
+    (problem_name, population_size, evaporation_rate)
+    for problem_name in ("BPP1", "BPP2")
+    for population_size, evaporation_rate in REQUIRED_SETTINGS
+)
+
+ADDITIONAL_EXPERIMENT_PLAN: tuple[ExperimentSetting, ...] = (
+    ("BPP1", 25, 0.15),
+    ("BPP2", 25, 0.15),
+    ("BPP1", 10, 0.15),
+    ("BPP1", 10, 0.45),
+    ("BPP1", 10, 0.60),
+    ("BPP2", 50, 0.15),
+    ("BPP2", 50, 0.45),
+    ("BPP2", 50, 0.60),
+)
+
+REQUIRED_BASE_SEED = 20_261_111
+ADDITIONAL_BASE_SEED = 20_261_151
 
 
 @dataclass(frozen=True)
@@ -33,6 +55,7 @@ class Problem:
         return len(self.item_weights)
 
 
+@dataclass(frozen=True)
 class TrialResult:
     #records the results of one ACO trial
 
@@ -200,9 +223,10 @@ def run_trial(
     )
 
 
-def run_required_experiments(
+def run_experiment_plan(
+    experiment_plan: Sequence[ExperimentSetting],
     trials_per_setting: int = 5,
-    base_seed: int = 20_261_111,
+    base_seed: int = REQUIRED_BASE_SEED,
     max_evaluations: int = 10_000,
     show_progress: bool = False,
 ) -> list[TrialResult]:
@@ -211,41 +235,72 @@ def run_required_experiments(
 
     if trials_per_setting <= 0:
         raise ValueError("trials_per_setting must be positive")
+    if not experiment_plan:
+        raise ValueError("experiment_plan must contain at least one setting")
 
     results: list[TrialResult] = []
     trial_number = 0
-    total_trials = 2 * len(REQUIRED_SETTINGS) * trials_per_setting
+    total_trials = len(experiment_plan) * trials_per_setting
 
     if show_progress:
         print(f"Running {total_trials} trials...", flush=True)
 
-    for problem_name in ("BPP1", "BPP2"):
+    for problem_name, population_size, evaporation_rate in experiment_plan:
         problem = make_problem(problem_name)
 
-        for population_size, evaporation_rate in REQUIRED_SETTINGS:
-            for _ in range(trials_per_setting):
-                #each trial has a different seed, including trials from different problems and parameter settings.
-                seed = base_seed + trial_number
-                results.append(
-                    run_trial(
-                        problem=problem,
-                        population_size=population_size,
-                        evaporation_rate=evaporation_rate,
-                        seed=seed,
-                        max_evaluations=max_evaluations,
-                    )
+        for _ in range(trials_per_setting):
+            #each trial has a different seed, including trials from different problems and parameter settings.
+            seed = base_seed + trial_number
+            results.append(
+                run_trial(
+                    problem=problem,
+                    population_size=population_size,
+                    evaporation_rate=evaporation_rate,
+                    seed=seed,
+                    max_evaluations=max_evaluations,
                 )
-                trial_number += 1
+            )
+            trial_number += 1
 
-                if show_progress:
-                    print(
-                        f"Completed trial {trial_number}/{total_trials} "
-                        f"({problem_name}, p={population_size}, "
-                        f"e={evaporation_rate:.2f})",
-                        flush=True,
-                    )
+            if show_progress:
+                print(
+                    f"Completed trial {trial_number}/{total_trials} "
+                    f"({problem_name}, p={population_size}, "
+                    f"e={evaporation_rate:.2f})",
+                    flush=True,
+                )
 
     return results
+
+
+def run_required_experiments(
+    trials_per_setting: int = 5,
+    base_seed: int = REQUIRED_BASE_SEED,
+    max_evaluations: int = 10_000,
+    show_progress: bool = False,
+) -> list[TrialResult]:
+    return run_experiment_plan(
+        REQUIRED_EXPERIMENT_PLAN,
+        trials_per_setting=trials_per_setting,
+        base_seed=base_seed,
+        max_evaluations=max_evaluations,
+        show_progress=show_progress,
+    )
+
+
+def run_additional_experiments(
+    trials_per_setting: int = 5,
+    base_seed: int = ADDITIONAL_BASE_SEED,
+    max_evaluations: int = 10_000,
+    show_progress: bool = False,
+) -> list[TrialResult]:
+    return run_experiment_plan(
+        ADDITIONAL_EXPERIMENT_PLAN,
+        trials_per_setting=trials_per_setting,
+        base_seed=base_seed,
+        max_evaluations=max_evaluations,
+        show_progress=show_progress,
+    )
 
 
 def print_trial_results(results: Sequence[TrialResult]) -> None:
@@ -321,6 +376,15 @@ def parse_arguments() -> argparse.Namespace:
         description="Run the ECM3412 ACO bin-packing experiments."
     )
     parser.add_argument(
+        "--experiment",
+        choices=("required", "additional"),
+        default="required",
+        help=(
+            "experiment plan to run: the required grid or the additional "
+            "midpoint and evaporation sweep (default: required)"
+        ),
+    )
+    parser.add_argument(
         "--trials",
         type=int,
         default=5,
@@ -335,8 +399,10 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--seed",
         type=int,
-        default=20_261_111,
-        help="base seed; each trial receives a distinct derived seed",
+        help=(
+            "optional base seed; defaults to 20261111 for required trials "
+            "and 20261151 for additional trials"
+        ),
     )
     parser.add_argument(
         "--csv",
@@ -350,12 +416,26 @@ def main() -> None:
     #run and display the coursework experiments
 
     arguments = parse_arguments()
-    results = run_required_experiments(
-        trials_per_setting=arguments.trials,
-        base_seed=arguments.seed,
-        max_evaluations=arguments.evaluations,
-        show_progress=True,
-    )
+    if arguments.experiment == "required":
+        base_seed = (
+            REQUIRED_BASE_SEED if arguments.seed is None else arguments.seed
+        )
+        results = run_required_experiments(
+            trials_per_setting=arguments.trials,
+            base_seed=base_seed,
+            max_evaluations=arguments.evaluations,
+            show_progress=True,
+        )
+    else:
+        base_seed = (
+            ADDITIONAL_BASE_SEED if arguments.seed is None else arguments.seed
+        )
+        results = run_additional_experiments(
+            trials_per_setting=arguments.trials,
+            base_seed=base_seed,
+            max_evaluations=arguments.evaluations,
+            show_progress=True,
+        )
     print_trial_results(results)
 
     if arguments.csv:

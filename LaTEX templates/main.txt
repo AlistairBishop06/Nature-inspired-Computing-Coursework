@@ -1,12 +1,18 @@
 \documentclass[12pt]{article}
 
-\usepackage{sans, geometry, graphicx}
+\usepackage{geometry, graphicx, array, booktabs, tabularx, iftex}
 
-\usepackage[scaled=1.06]{helvet}
-\renewcommand{\familydefault}{\sfdefault}
+\ifPDFTeX
+  \usepackage[scaled=1.06]{helvet}
+  \renewcommand{\familydefault}{\sfdefault}
+\else
+  \usepackage{fontspec}
+  \setmainfont{Arial}
+\fi
 
 \geometry{margin=1in}
 \pagestyle{plain}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 
 \title{ECM3412 Nature-Inspired Computation -- Programming Task and Report}
 
@@ -18,7 +24,7 @@
     {\Large Department of Computer Science} \\[.5cm]
     {\LARGE\bf ECM3412} \\[.5cm]
     {\LARGE\bf Programming Task and Report} \\[.5cm]
-    Candidate number: [Candidate number]
+    Candidate number: [740007415]
 \end{center}
 
 \thispagestyle{empty}
@@ -27,11 +33,11 @@
 
 \section*{Abstract}
 
-This report evaluates Ant Colony Optimisation (ACO) for a fixed-bin load-balancing problem. Each ant assigns every item to one bin and fitness is the difference between the heaviest and lightest bin. Two prescribed instances were tested with population sizes $p\in\{10,50\}$ and evaporation rates $e\in\{0.05,0.30\}$. Each setting used five independent trials and 10,000 fitness evaluations. BPP1 favoured $p=10,e=0.30$ (mean final fitness $1091.60$), whereas BPP2 favoured $p=50,e=0.30$ (mean $143855.55$). An additional $p=25,e=0.15$ experiment did not improve either result. High evaporation was beneficial on both instances, but the best population size depended on the problem.
+This report evaluates Ant Colony Optimisation (ACO) for a fixed-bin load-balancing problem. Each ant assigns every item to one bin and fitness is the difference between the heaviest and lightest bin. Two prescribed instances were tested with population sizes $p\in\{10,50\}$ and evaporation rates $e\in\{0.05,0.30\}$. Each setting used five independent trials and 10,000 fitness evaluations. In the required grid, BPP1 favoured $p=10,e=0.30$ (mean final fitness $1091.60$), whereas BPP2 favoured $p=50,e=0.30$ (mean $143855.55$). A targeted evaporation sweep retained the BPP1 result but improved BPP2 to mean $99932.25$ at $p=50,e=0.60$. Population size and evaporation interact through sampling breadth, update frequency, and pheromone memory.
 
 \section{Introduction}
 
-The classical bin-packing problem assigns weighted items to capacity-constrained bins while minimising the number of bins. This project studies a related fixed-bin balancing problem. Every item must be assigned to one of a prescribed number of bins, and the objective is
+The classical bin-packing problem assigns weighted items to capacity-constrained bins while minimising the number of bins. This project studies a related fixed-bin load-balancing problem, also closely related to multiway number partitioning. Every item must be assigned to one of a prescribed number of bins, and the objective is
 \[
 d=\max_j L_j-\min_j L_j,
 \]
@@ -61,7 +67,7 @@ Yakawa, Iima and Sannomiya design crossover to inherit item combinations within 
 
 PSO models social information sharing between particles. Standard PSO is continuous, whereas a bin assignment is a discrete categorical decision. A packing PSO therefore needs a discrete representation, a rule for assignment changes, and often repair or local search.
 
-Liu \emph{et al.} propose an evolutionary PSO for a two-dimensional multiobjective bin-packing problem involving bin usage and load balance. Their Pareto-based method is relevant because it treats balance explicitly rather than only minimising bin count \cite{liu2008moepso}. PSO may spread good assignments rapidly through a population, but its velocity concept is not naturally defined for item-to-bin choices. It is therefore a plausible alternative, but its implementation would require more problem-specific design than the ACO used here.
+Liu \emph{et al.} propose an evolutionary PSO for a two-dimensional multiobjective problem involving bin usage and load balance. Their Pareto-based method is relevant because it treats balance explicitly rather than only minimising bin count \cite{liu2008moepso}. PSO may spread good assignments rapidly through a population, but velocity is not naturally defined for item-to-bin choices. Implementing it would therefore require more problem-specific design than this ACO.
 
 \subsection{Other Nature-Inspired Approaches}
 
@@ -79,27 +85,29 @@ The published algorithms are not directly comparable because they often use diff
 \renewcommand{\arraystretch}{1.12}
 \caption{Critical comparison of approaches for the fixed-bin balancing problem.}
 \label{tab:algorithm-comparison}
-\begin{tabular}{p{0.16\textwidth} p{0.22\textwidth} p{0.27\textwidth} p{0.27\textwidth}}
-\hline
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.13\textwidth}>{\raggedright\arraybackslash}p{0.20\textwidth}YY@{}}
+\toprule
 \textbf{Approach} & \textbf{Representation} & \textbf{Strength for this project} & \textbf{Limitation}\\
-\hline
+\midrule
 ACO & Item--bin pheromone graph & Directly represents each discrete assignment and learns from complete routes. & Positive feedback can cause stagnation; performance depends on evaporation and update policy.\\
 GA & Assignment, permutation, or grouping chromosome & Crossover can preserve useful item groups and maintain several complete solutions. & Generic crossover may destroy balance; repair and grouping operators are difficult to design.\\
 PSO & Discrete assignment particles & Good solutions can spread rapidly through social information sharing. & Continuous velocity has no natural meaning for categorical bin choices.\\
 SA / hybrid search & Item moves, swaps, and neighbourhoods & Local moves directly target the load-range objective. & Cooling, neighbourhood design, and local-search cost strongly affect performance.\\
-\hline
-\end{tabular}
+\bottomrule
+\end{tabularx}
 \end{table}
 
 ACO is the most direct fit for the coursework because every item-to-bin assignment is a clear construction decision and pheromone can be attached directly to that decision. It is also transparent: the probability rule, reward, evaporation rate, and evaluation budget can be stated and tested explicitly. The required implementation is intentionally basic; it has no local search, pheromone bounds, heuristic information, or elitist global-best retention. These omissions make it less sophisticated than several published hybrids but provide a controlled experiment on population size and evaporation.
 
-The literature therefore exposes a specific gap addressed by this study. Published work demonstrates that ACO, evolutionary algorithms, PSO, and hybrid methods can perform well on several bin-packing variants, but those results generally concern minimum-bin or multidimensional objectives. This project instead holds the number of bins fixed and evaluates load-range minimisation under an identical 10,000-evaluation budget. Its contribution is consequently not a new metaheuristic, but a controlled empirical analysis of how population size and evaporation affect a basic ACO on two structured weight sequences. A hybrid ACO, grouping GA, or discrete PSO might perform better, but that claim would require a new implementation and equal evaluation budget.
+The literature therefore exposes a specific gap addressed by this study. Published work demonstrates that ACO, evolutionary algorithms, PSO, and hybrid methods can perform well on several bin-packing variants, but those results generally concern minimum-bin or multidimensional objectives. This project instead holds the number of bins fixed and evaluates load-range minimisation under an identical 10,000-evaluation budget. Classical bin-packing results therefore motivate algorithm design but do not establish performance on this objective. A direct comparison would require the same problem instances, fitness definition, and evaluation budget.
+
+The study's contribution is not a new metaheuristic, but a controlled empirical analysis of population size and evaporation in a basic ACO on two structured weight sequences. A hybrid ACO, grouping GA, or discrete PSO might perform better, but that claim would require a new implementation and equal evaluation budget. A simple greedy load-balancing heuristic would also provide a useful non-nature-inspired baseline for judging whether the extra search machinery improves solution quality.
 
 \section{Description of Results}
 
 \subsection{Experimental Setup}
 
-The construction graph contains one row per item and one column per bin. Pheromone values are initialised randomly in $[0,1)$. Roulette-wheel selection chooses each bin with probability proportional to its pheromone value. For each population, routes are evaluated, deposits are applied, and evaporation follows. The required settings were $(p,e)=(50,0.05),(50,0.30),(10,0.05),(10,0.30)$. Each setting was run five times on BPP1 and five times on BPP2, producing 40 trials. Every trial used a distinct seed and exactly 10,000 evaluations. Results below use the best ant in the final population, as required by the brief.
+The construction graph contains one row per item and one column per bin. Pheromone values are initialised randomly in $[0,1)$. Roulette-wheel selection chooses each bin with probability proportional to its pheromone value. For each population, all routes are evaluated, their deposits are summed, and evaporation follows. The required settings were $(p,e)=(50,0.05),(50,0.30),(10,0.05),(10,0.30)$. Each setting was run five times on BPP1 and five times on BPP2, producing 40 trials. Every trial used a distinct seed and exactly 10,000 evaluations. Results below use the best ant in the final population, as required by the brief; best-seen fitness is retained only as a diagnostic.
 
 \subsection{Experimental Results}
 
@@ -108,20 +116,20 @@ The construction graph contains one row per item and one column per bin. Pheromo
 \small
 \caption{Required trials. Mean, standard deviation, best and worst final fitness; lower is better.}
 \label{tab:required-results}
-\begin{tabular}{c c c r r r r}
-\hline
+\begin{tabular}{@{}l c c r r r r@{}}
+\toprule
 Problem & $p$ & $e$ & Mean & SD & Best & Worst\\
-\hline
+\midrule
 BPP1 & 50 & 0.05 & 8163.00 & 654.19 & 7550.00 & 9138.00\\
 BPP1 & 50 & 0.30 & 6344.00 & 768.19 & 5227.00 & 7073.00\\
 BPP1 & 10 & 0.05 & 9141.40 & 1763.18 & 7005.00 & 11319.00\\
 BPP1 & 10 & 0.30 & 1091.60 & 253.82 & 778.00 & 1321.00\\
-\hline
+\midrule
 BPP2 & 50 & 0.05 & 172004.05 & 2960.86 & 167253.25 & 174446.50\\
 BPP2 & 50 & 0.30 & 143855.55 & 12667.98 & 126874.75 & 158713.25\\
 BPP2 & 10 & 0.05 & 177969.70 & 26034.03 & 143774.50 & 199838.50\\
 BPP2 & 10 & 0.30 & 146515.70 & 11286.18 & 129393.75 & 157343.25\\
-\hline
+\bottomrule
 \end{tabular}
 \end{table}
 
@@ -130,7 +138,7 @@ BPP1 strongly favours $p=10,e=0.30$, while BPP2 favours $p=50,e=0.30$. The commo
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{results_summary.png}
-\caption{Mean final-population and best-seen fitness across the required trials; error bars show one standard deviation.}
+\caption{Mean final-population and best-seen fitness across the required trials. Dots show individual trials and error bars show one sample standard deviation.}
 \label{fig:results-summary}
 \end{figure}
 
@@ -138,21 +146,21 @@ BPP1 strongly favours $p=10,e=0.30$, while BPP2 favours $p=50,e=0.30$. The commo
 
 \subsection{Answer to Question 1}
 
-The best setting is problem-dependent. BPP1 is best with $p=10,e=0.30$, giving mean final fitness $1091.60$. BPP2 is best with $p=50,e=0.30$, giving mean final fitness $143855.55$. The shared feature is high evaporation, so $e=0.30$ is the strongest general choice in these experiments, while $p$ should depend on the instance.
+Among the required settings, the best combination is problem-dependent. BPP1 is best with $p=10,e=0.30$, giving mean final fitness $1091.60$. BPP2 is best with $p=50,e=0.30$, giving mean final fitness $143855.55$. The shared feature is high evaporation within the required grid, while the preferred population size depends on the instance. Section~5 tests whether $e=0.30$ remains best when the range is extended.
 
 \subsection{Answer to Question 2}
 
-At $e=0.05$, 95\% of pheromone is retained after each update. Since the initial table is random, early decisions can retain an accidental bias for too long. At $e=0.30$, only 70\% is retained, allowing later populations to replace misleading decisions. This provides a plausible explanation for the consistent advantage of high evaporation.
+At $e=0.05$, 95\% of pheromone is retained after each update. Since the initial table is random, early decisions can retain an accidental bias for too long. At $e=0.30$, only 70\% is retained, allowing later populations to replace misleading decisions. The observed advantage of $e=0.30$ is therefore consistent with a shorter pheromone memory, although the experiment does not directly measure exploration.
 
 The size of the effect supports this interpretation. Increasing $e$ from 0.05 to 0.30 reduces mean final fitness by 22.28\% for $p=50$ on BPP1 and by 88.06\% for $p=10$. On BPP2, the corresponding improvements are 16.37\% and 17.67\%. The especially large BPP1 improvement for $p=10$ suggests that frequent updates and rapid pheromone replacement work particularly well for that instance.
 
-Population size changes the number of updates available under 10,000 evaluations. $p=10$ gives approximately 1,000 updates, while $p=50$ gives approximately 200. BPP1 appears to benefit from rapid adaptation, whereas BPP2 benefits slightly from the broader sampling provided by 50 ants per update. These are tentative explanations because each setting has only five trials and the algorithm does not retain the global best route in its reported final population.
+Population size changes more than the number of assignments sampled together. Under 10,000 evaluations, $p=10$ gives 1,000 pheromone updates, while $p=50$ gives 200. The contribution of an existing pheromone value after $t$ further evaluations is proportional to $(1-e)^{t/p}$. Its approximate e-folding memory is consequently $-p/\ln(1-e)$ evaluations: 195 and 28 evaluations for $p=10$ at $e=0.05$ and $0.30$, compared with 975 and 140 for $p=50$. Moreover, deposits from all ants are summed before each evaporation step, so a 50-ant update aggregates five times as many routes as a 10-ant update. Population size and evaporation therefore interact through sampling breadth, update frequency, reinforcement magnitude, and memory. BPP1 appears to benefit from the shortest-memory setting, whereas BPP2 benefits slightly from the broader 50-ant sample. These explanations remain tentative because each setting has only five trials.
 
 \subsection{Answer to Question 3}
 
-A larger population samples more complete assignments per update and makes each pheromone update less dependent on one route, but it reduces the number of updates. A smaller population updates more frequently and can adapt quickly, but its updates are noisier. This explains why $p=10$ is highly effective on BPP1 but not quite best on BPP2.
+A larger population samples more complete assignments before each update, so its reinforcement reflects more routes, but it performs fewer update and evaporation cycles under a fixed evaluation budget. A smaller population updates more frequently from fewer routes. The unusually strong BPP1 result at $p=10,e=0.30$ is consistent with rapid replacement of earlier pheromone, while the smaller difference between the two $e=0.30$ populations on BPP2 suggests that broader sampling was more useful there.
 
-Low evaporation creates long-term memory and stronger exploitation, but can preserve poor early preferences. High evaporation increases adaptation and exploration, which improved both problems here. The figure also shows that the mean best-seen fitness is lower than the mean final-population fitness for most settings. This is expected because the required implementation reports the best ant in the final population and does not preserve an elite global solution. The difference is particularly important when interpreting convergence: finding a good route earlier does not guarantee that it remains in the final population. Excessive evaporation could eventually remove useful information too quickly, so the result supports $e=0.30$ for these instances rather than all possible problems.
+Low evaporation gives longer memory but can preserve poor early preferences. High evaporation shortens memory and permits quicker changes in selection probabilities; $e=0.30$ improved both problems in the required grid. This result should not be generalised beyond the tested range because still higher evaporation may discard useful information too quickly. The figure also shows that mean best-seen fitness is lower than mean final-population fitness for most settings. The required implementation reports the best ant in the final population and does not preserve an elite global solution, so finding a good route earlier does not guarantee that it remains at termination.
 
 \subsection{Answer to Question 4}
 
@@ -162,28 +170,42 @@ However, the reviewed studies use different problem definitions and budgets. It 
 
 \section{Further Experiments}
 
-An additional intermediate setting, $p=25,e=0.15$, was tested using five independent trials on each problem and the same 10,000-evaluation limit.
+The additional work had two stages. First, the intermediate setting $p=25,e=0.15$ was tested on both problems. Second, evaporation was varied while holding population size at the best required value for each problem: $p=10$ for BPP1 and $p=50$ for BPP2. The sweep tested $e\in\{0.15,0.45,0.60\}$ and compared it with the required $e=0.30$ result. Every additional setting used five new seeds and the same 10,000-evaluation limit.
 
 \begin{table}[ht]
 \centering
-\small
-\caption{Additional $p=25,e=0.15$ experiment.}
+\footnotesize
+\caption{Additional experiments with required $e=0.30$ baselines included for comparison.}
 \label{tab:additional-results}
-\begin{tabular}{c r r r r}
-\hline
-Problem & Mean & SD & Best & Worst\\
-\hline
-BPP1 & 8105.20 & 1586.77 & 5685.00 & 9595.00\\
-BPP2 & 161330.45 & 6482.13 & 153290.50 & 167263.75\\
-\hline
+\begin{tabular}{@{}l c c r r r r@{}}
+\toprule
+Problem & $p$ & $e$ & Mean & SD & Best & Worst\\
+\midrule
+BPP1 & 25 & 0.15 & 8105.20 & 1586.77 & 5685.00 & 9595.00\\
+BPP1 & 10 & 0.15 & 2599.80 & 353.18 & 2208.00 & 3050.00\\
+BPP1 & 10 & 0.30$^*$ & 1091.60 & 253.82 & 778.00 & 1321.00\\
+BPP1 & 10 & 0.45 & 1868.40 & 514.65 & 1075.00 & 2243.00\\
+BPP1 & 10 & 0.60 & 3440.80 & 1301.78 & 2188.00 & 4837.00\\
+\midrule
+BPP2 & 25 & 0.15 & 161330.45 & 6482.13 & 153290.50 & 167263.75\\
+BPP2 & 50 & 0.15 & 153351.65 & 16703.94 & 129660.75 & 171427.00\\
+BPP2 & 50 & 0.30$^*$ & 143855.55 & 12667.98 & 126874.75 & 158713.25\\
+BPP2 & 50 & 0.45 & 133071.85 & 9281.93 & 119660.50 & 142475.75\\
+BPP2 & 50 & 0.60 & 99932.25 & 10403.21 & 90728.50 & 114202.75\\
+\bottomrule
+\multicolumn{7}{l}{\scriptsize $^*$ Required setting, repeated for comparison.}
 \end{tabular}
 \end{table}
 
-The intermediate setting did not beat the best required setting on either problem. Its BPP1 mean was much worse than $p=10,e=0.30$, and its BPP2 mean was worse than both $e=0.30$ settings. It did improve on the low-evaporation BPP2 settings, supporting the conclusion that evaporation rate was more influential than an intermediate population size. Since only five additional trials were used, this is supporting evidence rather than a complete parameter search.
+The midpoint setting did not beat the best required result on either problem. The targeted sweep then showed that the effect of higher evaporation differs by instance. On BPP1, $e=0.30$ remained best; raising evaporation to $0.45$ or $0.60$ worsened the mean, consistent with useful pheromone being removed too quickly. On BPP2, performance improved as evaporation increased across the tested values. The $e=0.60$ mean was $99932.25$, a 30.53\% reduction from the required $e=0.30$ mean. Its worst trial ($114202.75$) was also better than the best $e=0.30$ trial ($126874.75$).
+
+These results show that the preferred memory length depends on the problem and that $e=0.30$ is not a universal optimum. The sweep uses only five trials per setting and one population size per problem, so it does not resolve other interactions. A larger factorial experiment with more repetitions and confidence intervals would be needed for statistical claims.
 
 \section{Conclusions}
 
-The required ACO experiments show that parameter choice and problem structure interact. BPP1 performed best with $p=10,e=0.30$, while BPP2 performed best with $p=50,e=0.30$. High evaporation was consistently beneficial, suggesting that rapid removal of random early pheromone bias improved exploration. The additional $p=25,e=0.15$ experiment did not improve the required results.
+The required ACO experiments show that parameter choice and problem structure interact. BPP1 performed best with $p=10,e=0.30$, while BPP2 performed best with $p=50,e=0.30$. The population size also changes update frequency and the effective pheromone memory, so its effect cannot be separated from the update schedule.
+
+The additional experiments refined rather than merely repeated this conclusion. The midpoint setting did not improve either problem, and BPP1 deteriorated above $e=0.30$. In contrast, BPP2 improved substantially at $p=50,e=0.60$. Higher evaporation can therefore help when shorter memory is useful, but the preferred rate depends on the instance and should be established experimentally.
 
 The literature suggests that local search, grouping-aware genetic operators, or discrete swarm operators could improve the algorithm, but such comparisons would need separate implementations and equal evaluation budgets. Overall, the basic ACO provides a transparent method for studying fixed-bin load balancing, and the results demonstrate that no single population size should be assumed to be optimal across different problem structures.
 
